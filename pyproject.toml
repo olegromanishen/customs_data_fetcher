@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "customs_data_fetcher"
+version = "0.1.0"
+description = "A package to fetch customs data from API and save to CSV."
+authors = ["o.romanishen"]
+
+[tool.poetry.dependencies]
+python = ">=3.10.0,<3.12"
+aiohttp = "^3.9.5"
+aiofiles = "^23.2.1"
+pandas = "^2.2.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+fetch_customs_data = "customs_data_fetcher.main:main"
