@@ -12,8 +12,9 @@ DEFAULT_OUTPUT_CSV = "customs_data.csv"
 RATE_LIMIT_DELAY = 180  # Задержка в секундах
 INITIAL_REQUEST_DELAY = 0.1  # Начальная задержка в секундах между запросами
 MAX_REQUEST_DELAY = 10  # Максимальная задержка в секундах между запросами
-MAX_CONCURRENT_REQUESTS = 5  # Максимальное количество одновременных запросов
+MAX_CONCURRENT_REQUESTS = 20  # Максимальное количество одновременных запросов
 HEADERS = {'accept': 'application/json'}
+SAVE_BATCH_SIZE = 1000  # Сколько записей сохранять за один раз, прежде чем записать в файл
 
 
 async def fetch_page(
@@ -28,7 +29,7 @@ async def fetch_page(
                 for remaining in range(RATE_LIMIT_DELAY, 0, -1):
                     print(f"Retrying in {remaining} seconds...", end='\r')
                     await asyncio.sleep(1)
-                print(" " * 30, end='\r')  # Clear the line after countdown
+                print(" " * 30, end='\r')
                 return await fetch_page(session, page, request_delay)
             if response.status != 200:
                 response.raise_for_status()
@@ -54,17 +55,20 @@ async def fetch_and_save_data(output_file: str) -> None:
     request_delay = INITIAL_REQUEST_DELAY
     page = 1
 
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(
+            limit_per_host=MAX_CONCURRENT_REQUESTS)) as session:
         async with aioopen(output_file, 'w') as f:
             header_written = False
+            all_data = []
+
             while True:
                 tasks = await fetch_all_pages(
                     session, page, page + MAX_CONCURRENT_REQUESTS - 1,
                     request_delay)
-                all_data = []
+
                 for task in tasks:
                     page_num, data = task
-                    if data is None:
+                    if data is None:  # Break out of the loop if a fetch fails
                         break
                     all_data.extend(data)
                     page += 1
@@ -72,6 +76,25 @@ async def fetch_and_save_data(output_file: str) -> None:
                 if not all_data:
                     break
 
+                if len(all_data) >= SAVE_BATCH_SIZE:
+                    df = pd.DataFrame(all_data)
+                    buffer = StringIO()
+                    df.to_csv(buffer,
+                              sep='\t',
+                              index=False,
+                              header=not header_written)
+                    await f.write(buffer.getvalue())
+
+                    all_data = []  # Reset the buffer
+                    if not header_written:
+                        header_written = True
+
+                # Динамическая настройка задержки
+                if request_delay < MAX_REQUEST_DELAY:
+                    request_delay *= 1.1  # Увеличиваем задержку на 10%
+
+            # Write remaining data to file
+            if all_data:
                 df = pd.DataFrame(all_data)
                 buffer = StringIO()
                 df.to_csv(buffer,
@@ -79,11 +102,6 @@ async def fetch_and_save_data(output_file: str) -> None:
                           index=False,
                           header=not header_written)
                 await f.write(buffer.getvalue())
-                header_written = True
-
-                # Динамическая настройка задержки
-                if request_delay < MAX_REQUEST_DELAY:
-                    request_delay *= 1.1  # Увеличиваем задержку на 10%
 
 
 async def main(output_file: str) -> None:
