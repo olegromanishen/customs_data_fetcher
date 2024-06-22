@@ -15,10 +15,14 @@ MAX_REQUEST_DELAY = 10  # Максимальная задержка в секу�
 MAX_CONCURRENT_REQUESTS = 5  # Максимальное количество одновременных запросов
 HEADERS = {'accept': 'application/json'}
 
-async def fetch_page(session: aiohttp.ClientSession, page: int, request_delay: float) -> Tuple[int, Optional[List[Dict[str, Any]]]]:
+
+async def fetch_page(
+        session: aiohttp.ClientSession, page: int,
+        request_delay: float) -> Tuple[int, Optional[List[Dict[str, Any]]]]:
     await asyncio.sleep(request_delay)
     try:
-        async with session.get(API_URL, headers=HEADERS, params={'page': page}) as response:
+        async with session.get(API_URL, headers=HEADERS,
+                               params={'page': page}) as response:
             if response.status == 429:
                 print("Rate limit exceeded. Waiting for retry...")
                 for remaining in range(RATE_LIMIT_DELAY, 0, -1):
@@ -34,9 +38,17 @@ async def fetch_page(session: aiohttp.ClientSession, page: int, request_delay: f
         print(f"Failed to fetch page {page}: {str(e)}")
         return page, None
 
-async def fetch_all_pages(session: aiohttp.ClientSession, start_page: int, end_page:int, request_delay: float) -> List[Tuple[int, Optional[List[Dict[str, Any]]]]]:
-    tasks = [fetch_page(session, page, request_delay) for page in range(start_page, end_page + 1)]
+
+async def fetch_all_pages(
+        session: aiohttp.ClientSession, start_page: int, end_page: int,
+        request_delay: float
+) -> List[Tuple[int, Optional[List[Dict[str, Any]]]]]:
+    tasks = [
+        fetch_page(session, page, request_delay)
+        for page in range(start_page, end_page + 1)
+    ]
     return await asyncio.gather(*tasks)
+
 
 async def fetch_and_save_data(output_file: str) -> None:
     request_delay = INITIAL_REQUEST_DELAY
@@ -46,7 +58,9 @@ async def fetch_and_save_data(output_file: str) -> None:
         async with aioopen(output_file, 'w') as f:
             header_written = False
             while True:
-                tasks = await fetch_all_pages(session, page, page + MAX_CONCURRENT_REQUESTS - 1, request_delay)
+                tasks = await fetch_all_pages(
+                    session, page, page + MAX_CONCURRENT_REQUESTS - 1,
+                    request_delay)
                 all_data = []
                 for task in tasks:
                     page_num, data = task
@@ -60,7 +74,10 @@ async def fetch_and_save_data(output_file: str) -> None:
 
                 df = pd.DataFrame(all_data)
                 buffer = StringIO()
-                df.to_csv(buffer, sep='\t', index=False, header=not header_written)
+                df.to_csv(buffer,
+                          sep='\t',
+                          index=False,
+                          header=not header_written)
                 await f.write(buffer.getvalue())
                 header_written = True
 
@@ -68,16 +85,23 @@ async def fetch_and_save_data(output_file: str) -> None:
                 if request_delay < MAX_REQUEST_DELAY:
                     request_delay *= 1.1  # Увеличиваем задержку на 10%
 
+
 async def main(output_file: str) -> None:
     print("Fetching data from API...")
     await fetch_and_save_data(output_file)
     print(f"Data saved to {output_file}")
 
+
 def run() -> None:
-    parser = argparse.ArgumentParser(description="Fetch customs data and save to CSV.")
-    parser.add_argument("--output", type=str, default=DEFAULT_OUTPUT_CSV, help="Output CSV file path")
+    parser = argparse.ArgumentParser(
+        description="Fetch customs data and save to CSV.")
+    parser.add_argument("--output",
+                        type=str,
+                        default=DEFAULT_OUTPUT_CSV,
+                        help="Output CSV file path")
     args = parser.parse_args()
     asyncio.run(main(args.output))
+
 
 if __name__ == "__main__":
     run()
