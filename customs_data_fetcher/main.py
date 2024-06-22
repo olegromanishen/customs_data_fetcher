@@ -9,7 +9,7 @@ import argparse
 # Константы API и файла
 API_URL = "http://5.159.103.79:4000/api/v1/logs"
 DEFAULT_OUTPUT_CSV = "customs_data.csv"
-INITIAL_REQUEST_DELAY = 1  # Начальная задержка в секундах между запросами
+INITIAL_REQUEST_DELAY = 0.1  # Начальная задержка в секундах между запросами
 RATE_LIMIT_DELAY = 180  # Задержка в секундах при превышении лимита
 MAX_REQUEST_DELAY = 10  # Максимальная задержка в секундах между запросами
 HEADERS = {'accept': 'application/json'}
