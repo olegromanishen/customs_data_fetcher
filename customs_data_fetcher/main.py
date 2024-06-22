@@ -12,7 +12,7 @@ DEFAULT_OUTPUT_CSV = "customs_data.csv"
 RATE_LIMIT_DELAY = 180  # Задержка в секундах
 INITIAL_REQUEST_DELAY = 0.1  # Начальная задержка в секундах между запросами
 MAX_REQUEST_DELAY = 10  # Максимальная задержка в секундах между запросами
-MAX_CONCURRENT_REQUESTS = 20  # Максимальное количество одновременных запросов
+MAX_CONCURRENT_REQUESTS = 120  # Максимальное количество одновременных запросов
 HEADERS = {'accept': 'application/json'}
 SAVE_BATCH_SIZE = 1000  # Сколько записей сохранять за один раз, прежде чем записать в файл
 
