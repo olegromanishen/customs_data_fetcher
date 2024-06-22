@@ -6,7 +6,6 @@ from io import StringIO
 from typing import Any, Dict, List, Optional
 import argparse
 
-
 # Константы API и файла
 API_URL = "http://5.159.103.79:4000/api/v1/logs"
 DEFAULT_OUTPUT_CSV = "customs_data.csv"
@@ -65,7 +64,7 @@ async def main(output_file: str) -> None:
     print(f"Data saved to {output_file}")
 
 
-if __name__ == "__main__":
+def run() -> None:
     parser = argparse.ArgumentParser(
         description="Fetch customs data and save to CSV.")
     parser.add_argument("--output",
@@ -75,3 +74,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     asyncio.run(main(args.output))
+
+
+if __name__ == "__main__":
+    run()
