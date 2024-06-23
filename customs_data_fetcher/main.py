@@ -55,7 +55,7 @@ async def fetch_all_pages(
 
 async def fetch_and_save_data(output_file: str) -> None:
     concurrent_requests = INITIAL_CONCURRENT_REQUESTS
-    request_delay = 0  # Start with no delay
+    request_delay = 0
     page = 1
     successful_requests = 0
     total_requests = 0
@@ -82,14 +82,13 @@ async def fetch_and_save_data(output_file: str) -> None:
 
                 for task in tasks:
                     page_num, data, is_successful = task
-                    if not is_successful:  # Handle rate limiting
+                    if not is_successful:
                         rate_limit_reached = True
                         break
                     all_data.extend(data)
                     page += 1
 
                 if rate_limit_reached:
-                    # Rate limit reached. Adjust request rate
                     print("Rate limit reached. Adjusting request rate...")
                     current_rps = total_requests / run_time  # Текущая скорость запросов в секунду
                     target_rps = total_requests / rate_limit_interval  # Целевая скорость запросов
